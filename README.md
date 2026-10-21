@@ -8,7 +8,7 @@
 
 Sistema de escritorio para la **gestión del parque de estaciones clasificadoras** de una planta de reciclaje, desarrollado en **C++/CLI** con **Windows Forms** y **.NET Framework**.
 
-El proyecto implementa una **arquitectura en capas** (Modelo – DAO – Controller – Vista) y operaciones **CRUD** completas sobre las entidades del dominio, con persistencia en archivos de texto plano.
+El proyecto implementa una **arquitectura en capas** (Modelo – DAO – Controller – Vista) y operaciones **CRUD** completas sobre las entidades del dominio. Utiliza **archivos de texto plano (TXT)** para las estaciones y **archivos binarios (BIN)** para las celdas de proceso, preparando el terreno para una futura migración a base de datos (SQL Server).
 
 ---
 
@@ -32,27 +32,36 @@ El proyecto implementa una **arquitectura en capas** (Modelo – DAO – Control
 
 ## 📖 Descripción General
 
-**SGPlantaReciclaje** es un sistema de información que permite administrar el inventario de **estaciones clasificadoras** dentro de una planta de reciclaje. Cada estación cuenta con:
+**SGPlantaReciclaje** es un sistema de información que permite administrar el inventario de las **estaciones clasificadoras** y los **módulos de proceso (celdas)** dentro de una planta de reciclaje. 
 
-- **Serial ID** único (identificador visible para el usuario).
+**Estaciones Clasificadoras:**
+- **Serial ID** único.
 - **Alias** o nombre descriptivo.
 - **Tipo** de estación (Neumática, Magnética, Óptica, Otros).
 - **Estado operativo** (Operativo, En Mantenimiento, Falla Crítica, Apagado).
 - **Ubicación** específica dentro de la planta.
 
-El sistema permite realizar las operaciones **CRUD** (Crear, Leer, Actualizar, Eliminar) sobre las estaciones, así como gestionar los **catálogos maestros** de tipos y estados operativos.
+**Celdas de Proceso:**
+- **ID** único de la celda.
+- **Nombre** (e.g., "Módulo de Trituración Primaria").
+- **Tipo** (Trituración, Lavado, Compactación, Clasificación).
+- **Estado** (Activa, En Configuración, Detenida por Alerta, Mantenimiento).
+- **Capacidad Máxima** en kg/h.
+
+El sistema permite realizar operaciones **CRUD** sobre ambas entidades, gestionando sus catálogos maestros y garantizando la persistencia de los datos.
 
 ---
 
 ## ✨ Características Principales
 
-- ✅ **CRUD completo** de estaciones clasificadoras.
-- ✅ **Búsqueda combinada** por Serial ID, tipo y estado operativo.
-- ✅ **Catálogos maestros** cargados dinámicamente en ComboBox no editables.
-- ✅ **Persistencia en archivos de texto plano** (`.txt`) con formato delimitado por `;`.
+- ✅ **CRUD completo** de estaciones clasificadoras (TXT) y celdas de proceso (BIN).
+- ✅ **Búsqueda combinada** por Serial ID, tipo y estado operativo en estaciones.
+- ✅ **Catálogos maestros** para estaciones y celdas, cargados dinámicamente en ComboBox no editables.
+- ✅ **Persistencia híbrida:** Texto plano (`.txt`) para catálogos y estaciones; Binario (`.bin`) para celdas de proceso.
 - ✅ **Ruta centralizada** de los archivos de datos mediante la clase base `BaseDAO`.
-- ✅ **Arquitectura en capas** claramente separadas.
-- ✅ **Validaciones** en la capa de control y en la capa de presentación.
+- ✅ **Arquitectura en capas** claramente separadas y preparada para migración a SQL Server.
+- ✅ **Validaciones** robustas en controladores (IDs únicos, capacidades numéricas mayores a 0) y en la vista.
+- ✅ **Helper centralizado (`ComboHelper`)** para el llenado uniforme de todos los ComboBox del sistema.
 - ✅ **Interfaz gráfica amigable** con DataGridView y MessageBox de confirmación.
 
 ---
@@ -94,10 +103,10 @@ El sistema sigue una arquitectura en capas, donde cada capa reside en su propio 
 
 | Capa | Proyecto | Responsabilidad |
 |------|----------|-----------------|
-| **Modelo** | `SGPlantaReciclajeModel` | Define las entidades del dominio con sus atributos y métodos. |
-| **Persistencia** | `SGPlantaReciclajeDAO` | Lee y escribe los datos en archivos `.txt`. Centraliza la ruta mediante `BaseDAO`. |
-| **Control** | `SGPlantaReciclajeController` | Implementa la lógica de negocio y valida las operaciones CRUD. |
-| **Vista** | `SGPlantaReciclajeView` | Interfaz gráfica Windows Forms con formularios de mantenimiento, alta y edición. |
+| **Modelo** | `SGPlantaReciclajeModel` | Define las entidades (`EstacionClasificadora`, `CeldaProceso`, `TipoEstacion`, `EstadoOperativo`, `TipoCelda`, `EstadoCelda`). |
+| **Persistencia** | `SGPlantaReciclajeDAO` | Gestiona archivos TXT y BIN. `BaseDAO` centraliza las rutas `BD\TXT\` y `BD\BIN\`. |
+| **Control** | `SGPlantaReciclajeController` | Lógica de negocio, validaciones y sincronización de los repositorios en memoria. |
+| **Vista** | `SGPlantaReciclajeView` | Interfaz gráfica Windows Forms y el `ComboHelper` para poblar los ComboBox. |
 
 ---
 
@@ -108,33 +117,49 @@ LPOO.2026_2_C07/
 │
 ├── SGPlantaReciclaje.sln                # Solución de Visual Studio
 │
-├── BD/                                  # Carpeta de datos (auto-creada)
-│   └── TXT/
-│       ├── Estaciones.txt               # Datos de estaciones clasificadoras
-│       ├── EstadoOperativo.txt          # Catálogo de estados operativos
-│       └── TipoEstaciones.txt           # Catálogo de tipos de estación
+├── BD/ # Carpeta de datos (auto-creada)
+│ ├── TXT/ # Persistencia en texto plano
+│ │ ├── Estaciones.txt
+│ │ ├── EstadoOperativo.txt
+│ │ ├── TipoEstaciones.txt
+│ │ ├── EstadoCeldas.txt # Catálogo de estados de celda
+│ │ └── TipoCeldas.txt # Catálogo de tipos de celda
+│ └── BIN/ # Persistencia binaria
+│ └── celdasProceso.bin # Datos serializados de celdas
 │
-├── SGPlantaReciclajeModel/              # Capa de Modelo
-│   ├── EstacionClasificadora.h / .cpp
-│   ├── TipoEstacion.h / .cpp
-│   └── EstadoOperativo.h / .cpp
+├── SGPlantaReciclajeModel/ # Capa de Modelo
+│ ├── EstacionClasificadora.h / .cpp
+│ ├── CeldaProceso.h / .cpp # [Serializable] para binario
+│ ├── TipoEstacion.h / .cpp
+│ ├── EstadoOperativo.h / .cpp
+│ ├── TipoCelda.h / .cpp
+│ └── EstadoCelda.h / .cpp
 │
-├── SGPlantaReciclajeDAO/                # Capa de Persistencia
-│   ├── BaseDAO.h / .cpp                 # Clase base con ruta centralizada
-│   ├── EstacionDAO.h / .cpp
-│   ├── TipoEstacionDAO.h / .cpp
-│   └── EstadoOperativoDAO.h / .cpp
+├── SGPlantaReciclajeDAO/ # Capa de Persistencia
+│ ├── BaseDAO.h / .cpp # Rutas centralizadas
+│ ├── EstacionDAO.h / .cpp
+│ ├── CeldaProcesoDAO.h / .cpp # Serialización binaria
+│ ├── TipoEstacionDAO.h / .cpp
+│ ├── EstadoOperativoDAO.h / .cpp
+│ ├── TipoCeldaDAO.h / .cpp
+│ └── EstadoCeldaDAO.h / .cpp
 │
-├── SGPlantaReciclajeController/         # Capa de Control
-│   ├── EstacionController.h / .cpp
-│   ├── TipoEstacionController.h / .cpp
-│   └── EstadoOperativoController.h / .cpp
+├── SGPlantaReciclajeController/ # Capa de Control
+│ ├── EstacionController.h / .cpp
+│ ├── CeldaProcesoController.h / .cpp
+│ ├── TipoEstacionController.h / .cpp
+│ ├── EstadoOperativoController.h / .cpp
+│ ├── TipoCeldaController.h / .cpp
+│ └── EstadoCeldaController.h / .cpp
 │
-├── SGPlantaReciclajeView/               # Capa de Presentación (GUI)
-│   ├── main.cpp                         # Punto de entrada
-│   ├── frmMantEstacion.h / .cpp         # Formulario principal
-│   ├── frmNuevaEstacion.h / .cpp        # Formulario de registro
-│   └── frmEditarEstacion.h / .cpp       # Formulario de edición
+├── SGPlantaReciclajeView/ # Capa de Presentación (GUI)
+│ ├── main.cpp # Punto de entrada
+│ ├── ComboHelper.h / .cpp # Helper para todos los ComboBox
+│ ├── frmMantEstacion.h / .cpp
+│ ├── frmNuevaEstacion.h / .cpp
+│ ├── frmEditarEstacion.h / .cpp
+│ ├── frmMantCelda.h / .cpp # CRUD de celdas (en desarrollo)
+│ └── frmNuevaCelda.h / .cpp
 │
 ├── .gitignore
 └── README.md
@@ -186,6 +211,32 @@ LPOO.2026_2_C07/
 | 3 | Falla Crítica |
 | 4 | Apagado |
 
+#### `CeldaProceso` (Persistencia Binaria)
+Clase marcada con `[Serializable]` para su uso con `BinaryFormatter`.
+
+| Atributo | Tipo | Descripción |
+|----------|------|-------------|
+| `id` | `String^` | Identificador único visible (PK lógica). |
+| `nombre` | `String^` | Nombre descriptivo de la celda. |
+| `tipo` | `int` | FK → `TipoCelda.idTipoCelda`. |
+| `estado` | `int` | FK → `EstadoCelda.idEstadoCelda`. |
+| `capacidad` | `double` | Capacidad máxima en kg/h. |
+
+#### `EstacionClasificadora` (Persistencia TXT)
+*(Se mantiene la estructura original detallada previamente)*
+
+#### Catálogos Maestros (TXT)
+- **TipoEstacion / EstadoOperativo** (para Estaciones)
+- **TipoCelda / EstadoCelda** (para Celdas): 
+  - Tipos: 1-Trituración, 2-Lavado, 3-Compactación, 4-Clasificación.
+  - Estados: 1-Activa, 2-En Configuración, 3-Detenida por Alerta, 4-Mantenimiento.
+
+### Formato de los archivos de persistencia
+
+**Archivos TXT (`Estaciones.txt`, etc.):** Formato delimitado por `;` en codificación UTF-8.
+
+**Archivo Binario (`celdasProceso.bin`):** Serialización directa de un `List<CeldaProceso^>` mediante `BinaryFormatter`.
+
 ### Formato de los archivos TXT
 
 **`Estaciones.txt`**
@@ -219,6 +270,7 @@ idEstadoOperativo;descripcion
 - **Formulario principal** (`frmMantEstacion`): Listado con DataGridView y criterios de búsqueda.
 - **Formulario de registro** (`frmNuevaEstacion`): Alta de una nueva estación.
 - **Formulario de edición** (`frmEditarEstacion`): Modificación de una estación existente.
+- **Formulario de Celdas** (`frmMantCelda`): Listado de celdas de proceso con validación de capacidad.
 
 ---
 
